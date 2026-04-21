@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import { useAuth } from '../_layout';
 
 export default function ProfileScreen() {
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
+  const { checkAuth } = useAuth();
 
   useEffect(() => {
     const loadUser = async () => {
@@ -17,7 +19,7 @@ export default function ProfileScreen() {
 
   const handleLogout = async () => {
     await AsyncStorage.clear();
-    router.replace('/(auth)/login');
+    await checkAuth();
   };
 
   if (!user) return null;

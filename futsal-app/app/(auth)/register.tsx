@@ -18,7 +18,7 @@ export default function RegisterScreen() {
     }
 
     try {
-      const response = await api.post('/auth/register', { 
+      const response = await api.post('auth/register', { 
         name, 
         mobile,
         email: email || undefined, // Send undefined if empty

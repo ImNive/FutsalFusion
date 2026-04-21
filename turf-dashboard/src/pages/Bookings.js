@@ -32,6 +32,7 @@ function Bookings() {
 
       {bookings.map((b) => (
         <div key={b._id} style={card}>
+          <p><b>Turf:</b> {b.turfId?.name || "Unknown Turf"}</p>
           <p><b>Player Name:</b> {b.playerName}</p>
           <p><b>Phone:</b> {b.phone || "N/A"}</p>
           <p><b>Date:</b> {b.date}</p>

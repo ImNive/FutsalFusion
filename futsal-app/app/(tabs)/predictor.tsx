@@ -33,7 +33,7 @@ export default function PredictorScreen() {
     setLoading(true);
     try {
       // Map local tiers back to the professional teams the model was trained on
-      const response = await api.post('/predict', { 
+      const response = await api.post('predict', { 
         teamA: tierA, 
         teamB: tierB 
       });

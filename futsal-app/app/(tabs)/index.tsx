@@ -48,7 +48,7 @@ export default function BookingScreen() {
 
   const fetchTurfs = async () => {
     try {
-      const response = await api.get('/turfs?activeOnly=true'); // Only show open turfs
+      const response = await api.get('turfs?activeOnly=true'); // Only show open turfs
       setTurfs(response.data);
       if (response.data.length > 0) setSelectedTurfIds([response.data[0]._id]);
     } catch (error) {} finally { setLoading(false); }
@@ -59,7 +59,7 @@ export default function BookingScreen() {
     try {
       // For multi-turf, we check slots for the FIRST selected turf mainly, 
       // but in a real system we'd check all. We'll stick to the primary selection for now.
-      const response = await api.get('/slots-status', {
+      const response = await api.get('slots-status', {
         params: { turfId: selectedTurfIds[0], date: selectedDateValue }
       });
       setSlots(response.data);
@@ -68,7 +68,7 @@ export default function BookingScreen() {
 
   const fetchMyBookings = async () => {
       try {
-          const response = await api.get('/bookings');
+          const response = await api.get('bookings');
           setMyBookings(response.data.slice(0, 5));
       } catch (error) {}
   };
@@ -98,7 +98,7 @@ export default function BookingScreen() {
     try {
       for (const tId of selectedTurfIds) {
           const turf = turfs.find(t => t._id === tId);
-          await api.post('/add-booking', {
+          await api.post('add-booking', {
             turfId: tId,
             date: selectedDateValue,
             timeSlot: selectedSlot,
@@ -120,7 +120,7 @@ export default function BookingScreen() {
 
   const handleCancel = async (id: string) => {
     try {
-        await api.post('/cancel-booking', { bookingId: id });
+        await api.post('cancel-booking', { bookingId: id });
         Alert.alert("Success", "Booking cancelled");
         fetchMyBookings();
         fetchSlotStatus();
