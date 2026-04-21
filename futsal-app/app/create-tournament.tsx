@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 
 export default function CreateTournamentScreen() {
@@ -11,7 +12,16 @@ export default function CreateTournamentScreen() {
   const [prizePool, setPrizePool] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const userData = await AsyncStorage.getItem('user');
+      if (userData) setUser(JSON.parse(userData));
+    };
+    loadUser();
+  }, []);
 
   const handleCreate = async () => {
     if (!name || !location || !startDate || !entryFee) {
@@ -19,27 +29,30 @@ export default function CreateTournamentScreen() {
       return;
     }
 
+    if (!user || !user.id) {
+        Alert.alert('Error', 'Please login to organize a tournament');
+        return;
+    }
+
     setLoading(true);
     try {
-      const user = await api.get('/auth/me').catch(() => ({ data: { id: 'dummy_id' } })); // Best effort to get organizer ID
-      
-      await api.post('/tournaments', {
+      await api.post('tournaments', {
         name,
         location,
         startDate,
         entryFee: Number(entryFee),
         prizePool,
         description,
-        organizerId: user.data.id || '679ebc62f6462e649e800b7f', // Fallback to a valid ID if needed
+        organizerId: user.id, // REAL ID
         status: 'upcoming'
       });
       
       Alert.alert('Success', 'Tournament organized successfully!', [
         { text: 'OK', onPress: () => router.back() }
       ]);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      Alert.alert('Error', 'Failed to create tournament');
+      Alert.alert('Error', error.response?.data?.error || 'Failed to create tournament. Is the backend running?');
     } finally {
       setLoading(false);
     }
@@ -128,7 +141,7 @@ export default function CreateTournamentScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  content: { padding: 25, paddingTop: 60 },
+  content: { padding: 25, paddingTop: 60, paddingBottom: 100 },
   title: { fontSize: 28, fontWeight: 'bold', color: '#1e293b' },
   subtitle: { fontSize: 14, color: '#64748b', marginBottom: 30 },
   form: { gap: 15 },
