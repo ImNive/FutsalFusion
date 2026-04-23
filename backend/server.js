@@ -176,17 +176,34 @@ apiRouter.get("/dashboard", async (req, res) => {
   try {
     const totalTurfs = await Turf.countDocuments();
     const totalBookings = await Booking.countDocuments({ status: { $in: ["paid", "pending", "confirmed"] } });
+    
     const todayDate = new Date().toISOString().split('T')[0];
     const todayBookings = await Booking.find({ status: { $in: ["paid", "pending", "confirmed"] }, date: todayDate });
-    const totalRevenue = todayBookings.reduce((sum, b) => sum + (b.amount || 0), 0);
+    const todayRevenue = todayBookings.reduce((sum, b) => sum + (b.amount || 0), 0);
+    
+    const allConfirmedBookings = await Booking.find({ status: { $in: ["paid", "pending", "confirmed"] } });
+    const totalRevenue = allConfirmedBookings.reduce((sum, b) => sum + (b.amount || 0), 0);
+
+    // Get bookings for last 7 days for the graph
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        const count = await Booking.countDocuments({ status: { $in: ["paid", "pending", "confirmed"] }, date: dateStr });
+        last7Days.push({ name: dateStr.split('-').slice(1).join('/'), bookings: count });
+    }
+
     res.json({
       totalTurfs,
       totalBookings,
       todayBookings: todayBookings.length,
+      todayRevenue,
       totalRevenue,
       totalSlots: totalTurfs * ALL_SLOTS.length,
       bookedSlots: todayBookings.length,
-      availableSlots: (totalTurfs * ALL_SLOTS.length) - todayBookings.length
+      availableSlots: (totalTurfs * ALL_SLOTS.length) - todayBookings.length,
+      bookingTrend: last7Days
     });
   } catch (error) {
     res.status(500).json({ error: "Dashboard failure" });

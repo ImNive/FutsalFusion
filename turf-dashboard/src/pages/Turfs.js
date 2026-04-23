@@ -6,7 +6,7 @@ function Turfs() {
   const [editingId, setEditingId] = useState(null);
 
   const fetchTurfs = async () => {
-    const res = await fetch("http://localhost:5000/api/turfs");
+    const res = await fetch("http://192.168.100.120:5000/api/turfs");
     const data = await res.json();
     setTurfs(data);
   };
@@ -20,8 +20,8 @@ function Turfs() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const url = editingId 
-        ? `http://localhost:5000/api/update-turf/${editingId}`
-        : "http://localhost:5000/api/add-turf";
+        ? `http://192.168.100.120:5000/api/update-turf/${editingId}`
+        : "http://192.168.100.120:5000/api/add-turf";
     
     const method = editingId ? "PUT" : "POST";
 
@@ -43,7 +43,7 @@ function Turfs() {
   };
 
   const toggleActive = async (id, currentStatus) => {
-      await fetch(`http://localhost:5000/api/update-turf/${id}`, {
+      await fetch(`http://192.168.100.120:5000/api/update-turf/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ isActive: !currentStatus })
@@ -53,7 +53,7 @@ function Turfs() {
 
   const deleteTurf = async (id) => {
       if (window.confirm("Are you sure? This will permanently delete the turf.")) {
-          await fetch(`http://localhost:5000/api/delete-turf/${id}`, { method: "DELETE" });
+          await fetch(`http://192.168.100.120:5000/api/delete-turf/${id}`, { method: "DELETE" });
           fetchTurfs();
       }
   };

@@ -4,7 +4,7 @@ function Bookings() {
   const[bookings, setBookings] = useState([]);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/bookings`)
+    fetch(`http://192.168.100.120:5000/api/bookings`)
     .then(res => res.json())
     .then(data => {
       console.log("DATA FROM BACKEND:", data);
@@ -14,13 +14,13 @@ function Bookings() {
   }, []);
 
   const updateStatus = async (id, status) => {
-    await fetch(`http://localhost:5000/api/booking-status/${id}`, {
+    await fetch(`http://192.168.100.120:5000/api/booking-status/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status })
     });
 
-     fetch(`http://localhost:5000/api/bookings`)
+     fetch(`http://192.168.100.120:5000/api/bookings`)
     .then(res => res.json())
     .then(data => setBookings(data));
 };
@@ -40,13 +40,27 @@ function Bookings() {
           <p><b>Amount:</b> Rs {b.amount}</p>
           <p><b>Payment:</b> <span style={{ color: b.paymentMethod === 'online' ? 'blue' : 'orange' }}>{b.paymentMethod?.toUpperCase() || 'CASH'}</span></p>
           <p><b>Status:</b> {b.status}</p>
-          <button onClick={() => updateStatus(b._id, "confirmed")} style={btnConfirm} disabled={b.status === 'confirmed'}> Confirm </button>
-          <button onClick={() => updateStatus(b._id, "cancelled")} style={btnCancel} disabled={b.status === 'cancelled'}> Cancel </button>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+            <button onClick={() => updateStatus(b._id, "confirmed")} style={btnConfirm} disabled={b.status === 'confirmed' || b.status === 'paid'}> Confirm </button>
+            {b.paymentMethod === 'cash' && b.status === 'pending' && (
+              <button onClick={() => updateStatus(b._id, "paid")} style={btnPaid}> Mark as Paid </button>
+            )}
+            <button onClick={() => updateStatus(b._id, "cancelled")} style={btnCancel} disabled={b.status === 'cancelled'}> Cancel </button>
+          </div>
         </div>
       ))}
     </div>
   );
 }
+
+const btnPaid = {
+  padding: "8px 12px",
+  background: "#10b981",
+  color: "#fff",
+  border: "none",
+  borderRadius: "5px",
+  cursor: "pointer"
+};
 
 
 const card = {

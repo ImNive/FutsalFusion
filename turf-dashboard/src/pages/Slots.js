@@ -9,7 +9,7 @@ function Slots() {
 
   // Fetch all turfs for the selector
   useEffect(() => {
-    fetch("http://localhost:5000/api/turfs")
+    fetch("http://192.168.100.120:5000/api/turfs")
       .then(res => res.json())
       .then(data => {
         setTurfs(data);
@@ -22,7 +22,7 @@ function Slots() {
   useEffect(() => {
     if (selectedTurf && selectedDate) {
       setLoading(true);
-      fetch(`http://localhost:5000/api/slots-status?turfId=${selectedTurf}&date=${selectedDate}`)
+      fetch(`http://192.168.100.120:5000/api/slots-status?turfId=${selectedTurf}&date=${selectedDate}`)
         .then(res => res.json())
         .then(data => {
           setSlots(data);

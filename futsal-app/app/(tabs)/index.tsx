@@ -14,10 +14,10 @@ const DATES = Array.from({ length: 14 }, (_, i) => {
 
 export default function BookingScreen() {
   const [turfs, setTurfs] = useState<any[]>([]);
-  const [selectedTurfIds, setSelectedTurfIds] = useState<string[]>([]);
+  const [selectedTurfId, setSelectedTurfId] = useState<string>("");
   const [selectedDateValue, setSelectedDateValue] = useState(DATES[0].value);
   const [slots, setSlots] = useState<any[]>([]);
-  const [selectedSlot, setSelectedSlot] = useState("");
+  const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -36,10 +36,10 @@ export default function BookingScreen() {
   }, []);
 
   useEffect(() => {
-    if (selectedTurfIds.length > 0) {
+    if (selectedTurfId) {
       fetchSlotStatus();
     }
-  }, [selectedTurfIds, selectedDateValue]);
+  }, [selectedTurfId, selectedDateValue]);
 
   const loadUser = async () => {
     const userData = await AsyncStorage.getItem('user');
@@ -50,17 +50,15 @@ export default function BookingScreen() {
     try {
       const response = await api.get('turfs?activeOnly=true'); // Only show open turfs
       setTurfs(response.data);
-      if (response.data.length > 0) setSelectedTurfIds([response.data[0]._id]);
+      if (response.data.length > 0) setSelectedTurfId(response.data[0]._id);
     } catch (error) {} finally { setLoading(false); }
   };
 
   const fetchSlotStatus = async () => {
     setFetchingSlots(true);
     try {
-      // For multi-turf, we check slots for the FIRST selected turf mainly, 
-      // but in a real system we'd check all. We'll stick to the primary selection for now.
       const response = await api.get('slots-status', {
-        params: { turfId: selectedTurfIds[0], date: selectedDateValue }
+        params: { turfId: selectedTurfId, date: selectedDateValue }
       });
       setSlots(response.data);
     } catch (error) {} finally { setFetchingSlots(false); }
@@ -73,17 +71,17 @@ export default function BookingScreen() {
       } catch (error) {}
   };
 
-  const toggleTurf = (id: string) => {
-      if (selectedTurfIds.includes(id)) {
-          setSelectedTurfIds(selectedTurfIds.filter(tid => tid !== id));
+  const toggleSlot = (slot: string) => {
+      if (selectedSlots.includes(slot)) {
+          setSelectedSlots(selectedSlots.filter(s => s !== slot));
       } else {
-          setSelectedTurfIds([...selectedTurfIds, id]);
+          setSelectedSlots([...selectedSlots, slot]);
       }
   };
 
   const handleBookingStart = () => {
-      if (selectedTurfIds.length === 0 || !selectedSlot) {
-          Alert.alert("Error", "Please select at least one turf and a slot");
+      if (!selectedTurfId || selectedSlots.length === 0) {
+          Alert.alert("Error", "Please select a turf and at least one slot");
           return;
       }
 
@@ -96,20 +94,20 @@ export default function BookingScreen() {
 
   const executeBookings = async (method: string) => {
     try {
-      for (const tId of selectedTurfIds) {
-          const turf = turfs.find(t => t._id === tId);
+      const turf = turfs.find(t => t._id === selectedTurfId);
+      for (const slot of selectedSlots) {
           await api.post('add-booking', {
-            turfId: tId,
+            turfId: selectedTurfId,
             date: selectedDateValue,
-            timeSlot: selectedSlot,
+            timeSlot: slot,
             playerName: user?.name || "Guest",
             phone: user?.mobile || "",
             amount: turf.pricePerHour,
             paymentMethod: method
           });
       }
-      Alert.alert("Success", `Booking confirmed for ${selectedTurfIds.length} turf(s)!`);
-      setSelectedSlot("");
+      Alert.alert("Success", `Booking confirmed for ${selectedSlots.length} slot(s)!`);
+      setSelectedSlots([]);
       setShowPaymentModal(false);
       fetchSlotStatus();
       fetchMyBookings();
@@ -129,10 +127,7 @@ export default function BookingScreen() {
     }
   };
 
-  const totalAmount = selectedTurfIds.reduce((sum, tid) => {
-      const t = turfs.find(turf => turf._id === tid);
-      return sum + (t?.pricePerHour || 0);
-  }, 0);
+  const totalAmount = selectedSlots.length * (turfs.find(t => t._id === selectedTurfId)?.pricePerHour || 0);
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" />;
 
@@ -140,17 +135,17 @@ export default function BookingScreen() {
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 50 }}>
       <Text style={styles.header}>Book a Turf</Text>
       
-      <Text style={styles.sectionTitle}>1. Select Turfs (You can pick more than one)</Text>
+      <Text style={styles.sectionTitle}>1. Select Turf</Text>
       <FlatList
         horizontal
         data={turfs}
         keyExtractor={(item: any) => item._id}
         renderItem={({ item }: any) => {
-          const isSelected = selectedTurfIds.includes(item._id);
+          const isSelected = selectedTurfId === item._id;
           return (
             <TouchableOpacity 
               style={[styles.turfCard, isSelected && styles.selected]} 
-              onPress={() => toggleTurf(item._id)}
+              onPress={() => { setSelectedTurfId(item._id); setSelectedSlots([]); }}
             >
               <Text style={styles.turfName}>{item.name}</Text>
               <Text style={styles.turfLocation}>📍 {item.location || "City Center"}</Text>
@@ -169,7 +164,7 @@ export default function BookingScreen() {
             <TouchableOpacity 
               key={d.value}
               style={[styles.dateChip, selectedDateValue === d.value && styles.selectedDateChip]}
-              onPress={() => { setSelectedDateValue(d.value); setSelectedSlot(""); }}
+              onPress={() => { setSelectedDateValue(d.value); setSelectedSlots([]); }}
             >
               <Text style={[styles.dateChipText, selectedDateValue === d.value && { color: '#fff' }]}>{d.label}</Text>
             </TouchableOpacity>
@@ -177,21 +172,22 @@ export default function BookingScreen() {
         </ScrollView>
       </View>
 
-      <Text style={styles.sectionTitle}>3. Available Slots</Text>
+      <Text style={styles.sectionTitle}>3. Available Slots (You can pick more than one)</Text>
       {fetchingSlots ? (
         <ActivityIndicator size="small" color="#2563eb" style={{ marginVertical: 20 }} />
       ) : (
         <View style={styles.slotsGrid}>
           {slots.map((item) => {
             const isUnavailable = item.status !== "available";
+            const isSelected = selectedSlots.includes(item.slot);
             return (
               <TouchableOpacity 
                 key={item.slot} 
                 disabled={isUnavailable}
-                style={[styles.slot, selectedSlot === item.slot && styles.selectedSlot, isUnavailable && styles.unavailableSlot]}
-                onPress={() => setSelectedSlot(item.slot)}
+                style={[styles.slot, isSelected && styles.selectedSlot, isUnavailable && styles.unavailableSlot]}
+                onPress={() => toggleSlot(item.slot)}
               >
-                <Text style={[styles.slotText, selectedSlot === item.slot && { color: '#fff' }, isUnavailable && { color: '#94a3b8' }]}>{item.slot}</Text>
+                <Text style={[styles.slotText, isSelected && { color: '#fff' }, isUnavailable && { color: '#94a3b8' }]}>{item.slot}</Text>
               </TouchableOpacity>
             );
           })}
@@ -208,7 +204,7 @@ export default function BookingScreen() {
           </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={[styles.bookButton, (!selectedSlot || selectedTurfIds.length === 0) && { opacity: 0.5 }]} onPress={handleBookingStart}>
+      <TouchableOpacity style={[styles.bookButton, (selectedSlots.length === 0 || !selectedTurfId) && { opacity: 0.5 }]} onPress={handleBookingStart}>
         <Text style={styles.bookButtonText}>Book Now (Total: Rs. {totalAmount})</Text>
       </TouchableOpacity>
 
